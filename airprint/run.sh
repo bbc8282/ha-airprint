@@ -4,21 +4,6 @@ set -euo pipefail
 OPTIONS=/data/options.json
 QUEUES=/tmp/airprint-queues
 STATUS_DIR=/srv
-ICON=/usr/share/airprint/printer.png
-
-driver_for() {
-	local device_id=$1 model=$2 driver=""
-
-	if [ -n "${device_id}" ]; then
-		driver=$(lpinfo --device-id "${device_id}" -m 2>/dev/null | awk 'NR == 1 { print $1 }')
-	fi
-
-	if [ -z "${driver}" ] && [ -n "${model}" ]; then
-		driver=$(lpinfo --make-and-model "${model}" -m 2>/dev/null | awk 'NR == 1 { print $1 }')
-	fi
-
-	printf '%s' "${driver}"
-}
 
 /drivers.sh
 
@@ -95,10 +80,7 @@ for i in $(seq 0 $((COUNT - 1))); do
 		continue
 	fi
 
-	DEVICE_ID=$(printf '%s' "${FOUND}" | jq -r --arg d "${DEVICE}" '.[] | select(.device == $d) | .device_id // ""' | head -1)
-	MODEL=$(printf '%s' "${FOUND}" | jq -r --arg d "${DEVICE}" '.[] | select(.device == $d) | .name // ""' | head -1)
-
-	DRIVER=$(driver_for "${DEVICE_ID}" "${MODEL}")
+	DRIVER=$(printf '%s' "${FOUND}" | jq -r --arg d "${DEVICE}" '.[] | select(.device == $d) | .driver // ""' | head -1)
 
 	if [ -z "${PRINTER_ICON}" ]; then
 		LABEL="${NAME}"
@@ -106,31 +88,21 @@ for i in $(seq 0 $((COUNT - 1))); do
 		LABEL="${PRINTER_ICON} ${NAME}"
 	fi
 
-
 	if [ -z "${DRIVER}" ]; then
-		echo "[airprint] ${NAME}: no driver — add one in the add-on's Drivers option"
-		printf '%s\t%s\t%s\t%s\n' "${QUEUE}" "${DEVICE}" "${LABEL}" "" >> "${QUEUES}"
+		echo "[airprint] ${NAME}: no driver matched yet - will keep trying"
+		printf '%s\t%s\t%s\t%s\t%s\n' "${QUEUE}" "${DEVICE}" "${LABEL}" "${LOCATION}" "" >> "${QUEUES}"
 		continue
 	fi
 
 	echo "[airprint] ${NAME}: driver ${DRIVER}"
 
-	if ! lpadmin -p "${QUEUE}" \
-		-v "${DEVICE}" \
-		-m "${DRIVER}" \
-		-D "${LABEL}" \
-		-L "${LOCATION}" \
-		-o printer-is-shared=true \
-		-o printer-error-policy=retry-job \
-		-E; then
-		echo "[airprint] skipping ${NAME}: could not create the print queue"
+	if ! /queue.sh "${QUEUE}" "${DEVICE}" "${LABEL}" "${LOCATION}" "${DRIVER}"; then
+		echo "[airprint] ${NAME}: could not create the print queue - will keep trying"
+		printf '%s\t%s\t%s\t%s\t%s\n' "${QUEUE}" "${DEVICE}" "${LABEL}" "${LOCATION}" "" >> "${QUEUES}"
 		continue
 	fi
 
-	mkdir -p /var/cache/cups/images
-	cp "${ICON}" "/var/cache/cups/images/${QUEUE}.png"
-
-	printf '%s\t%s\t%s\t%s\n' "${QUEUE}" "${DEVICE}" "${LABEL}" "${DRIVER}" >> "${QUEUES}"
+	printf '%s\t%s\t%s\t%s\t%s\n' "${QUEUE}" "${DEVICE}" "${LABEL}" "${LOCATION}" "${DRIVER}" >> "${QUEUES}"
 	echo "[airprint] ${LABEL} -> ${DEVICE}"
 done
 

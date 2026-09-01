@@ -49,7 +49,7 @@ if [ "${WHAT}" = "all" ] || [ "${WHAT}" = "addon" ]; then
 	rm -rf "${work}"
 
 	guest "docker exec hassio_cli ha store reload >/dev/null 2>&1; docker exec hassio_cli ha apps rebuild ${SLUG} 2>&1 | tail -1" 900
-	guest "docker exec hassio_cli ha apps start ${SLUG} >/dev/null 2>&1; sleep 20; docker logs addon_${SLUG} 2>&1 | tail -5"
+	guest "docker exec hassio_cli ha apps start ${SLUG} >/dev/null 2>&1; sleep 20; docker logs app_${SLUG} 2>&1 | tail -5"
 fi
 
 if [ "${WHAT}" = "all" ] || [ "${WHAT}" = "integration" ]; then

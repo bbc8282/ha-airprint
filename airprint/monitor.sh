@@ -18,6 +18,14 @@ notify() {
 		"${CORE}/services/persistent_notification/create" || true
 }
 
+dismiss() {
+	curl -sS -o /dev/null -m 10 \
+		-H "Authorization: Bearer ${SUPERVISOR_TOKEN}" \
+		-H "Content-Type: application/json" \
+		-X POST -d "$(jq -nc --arg i "airprint_$1" '{notification_id:$i}')" \
+		"${CORE}/services/persistent_notification/dismiss" || true
+}
+
 snmp() {
 	snmpget -v1 -c public -t 2 -r 0 -Oqv "$1" "$2" 2>/dev/null | tr -d '"'
 }
@@ -69,10 +77,23 @@ while true; do
 	CONFIGURED=""
 	FOUND=$(/discover.sh)
 
-	while IFS=$'\t' read -r QUEUE DEVICE LABEL DRIVER; do
+	: > "${QUEUES}.next"
+
+	while IFS=$'\t' read -r QUEUE DEVICE LABEL LOCATION DRIVER; do
 		[ -n "${QUEUE}" ] || continue
 		CONFIGURED="${CONFIGURED} ${DEVICE}"
+		LOCATION=${LOCATION:-}
 		DRIVER=${DRIVER:-}
+
+		if [ -z "${DRIVER}" ]; then
+			MATCH=$(printf '%s' "${FOUND}" | jq -r --arg d "${DEVICE}" '.[] | select(.device == $d) | .driver // ""' | head -1)
+			if [ -n "${MATCH}" ] && /queue.sh "${QUEUE}" "${DEVICE}" "${LABEL}" "${LOCATION}" "${MATCH}"; then
+				echo "[airprint] ${LABEL}: driver ${MATCH} -> queue created"
+				DRIVER=${MATCH}
+			fi
+		fi
+
+		printf '%s\t%s\t%s\t%s\t%s\n' "${QUEUE}" "${DEVICE}" "${LABEL}" "${LOCATION}" "${DRIVER}" >> "${QUEUES}.next"
 
 		IFS=$'\t' read -r HOST _ < <(resolve "${DEVICE}")
 
@@ -118,15 +139,18 @@ while true; do
 			--argjson toner "${TONER}" --argjson pages "${PAGES}" --argjson reasons "${REASONS}" \
 			'. + [{id:$id, device:$device, name:$name, model:$model, driver:$driver, host:$host, online:$online, problem:$problem, jobs:$jobs, toner:$toner, supply:$supply, pages:$pages, reasons:$reasons}]')
 
-		if [ -z "${DRIVER}" ]; then
+		if [ -n "${DRIVER}" ]; then
+			if grep -qx "nodriver_${QUEUE}" "${NOTIFIED}"; then
+				sed -i "/^nodriver_${QUEUE}$/d" "${NOTIFIED}"
+				dismiss "nodriver_${QUEUE}"
+			fi
+		elif [ -n "${MODEL}" ]; then
 			if ! grep -qx "nodriver_${QUEUE}" "${NOTIFIED}"; then
 				echo "nodriver_${QUEUE}" >> "${NOTIFIED}"
 				notify "Printer needs a driver" \
 					"**${LABEL}** has no driver, so it cannot print. Add one in the AirPrint add-on's **Drivers** option — see the [README](https://github.com/aaronfagan/ha-airprint#drivers)." \
 					"nodriver_${QUEUE}"
 			fi
-		else
-			sed -i "/^nodriver_${QUEUE}$/d" "${NOTIFIED}"
 		fi
 
 		if [ "${PROBLEM}" = "true" ] && [ "${JOBS}" -gt 0 ]; then
@@ -139,9 +163,14 @@ while true; do
 					"stuck_${QUEUE}"
 			fi
 		elif [ "${PROBLEM}" = "false" ]; then
-			sed -i "/^stuck_${QUEUE}$/d" "${NOTIFIED}"
+			if grep -qx "stuck_${QUEUE}" "${NOTIFIED}"; then
+				sed -i "/^stuck_${QUEUE}$/d" "${NOTIFIED}"
+				dismiss "stuck_${QUEUE}"
+			fi
 		fi
 	done < "${QUEUES}"
+
+	mv "${QUEUES}.next" "${QUEUES}"
 
 	DISCOVERED="[]"
 

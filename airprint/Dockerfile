@@ -39,6 +39,7 @@ COPY run.sh /run.sh
 COPY monitor.sh /monitor.sh
 COPY drivers.sh /drivers.sh
 COPY discover.sh /discover.sh
-RUN chmod +x /run.sh /monitor.sh /drivers.sh /discover.sh
+COPY queue.sh /queue.sh
+RUN chmod +x /run.sh /monitor.sh /drivers.sh /discover.sh /queue.sh
 
 CMD ["/run.sh"]

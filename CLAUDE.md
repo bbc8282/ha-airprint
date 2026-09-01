@@ -31,8 +31,8 @@ qm guest exec 100 -- /bin/sh -c 'echo <BASE64> | base64 -d | sh'
 ```
 
 - Supervisor CLI: `docker exec hassio_cli ha apps ...` / `ha store reload` / `ha core restart` (the CLI still accepts the old `addons` verb but prints a deprecation; prefer `apps`).
-- Published-store slug: `0f9301c3_airprint`, container `addon_0f9301c3_airprint`. Local dev build: `local_airprint`.
-- Inspect the running add-on with `docker exec addon_0f9301c3_airprint cat /srv/status.json`, and `docker inspect` for RestartCount/StartedAt. `ha apps logs` is a rolling buffer that keeps pre-restart lines, so do not mistake old lines for live looping.
+- Published-store slug: `0f9301c3_airprint`, container `app_0f9301c3_airprint`. Local dev build: `local_airprint`, container `app_local_airprint`.
+- Inspect the running add-on with `docker exec app_0f9301c3_airprint cat /srv/status.json`, and `docker inspect` for RestartCount/StartedAt. `ha apps logs` is a rolling buffer that keeps pre-restart lines, so do not mistake old lines for live looping.
 - A printer that fell to a link-local `169.254.x` address (lost its DHCP lease) makes cupsd restart-loop; fix the printer, not the add-on.
 - No tcpdump/conntrack on HA OS. To watch for stray 9100 traffic, arm an `iptables` OUTPUT LOG rule on SYNs to the printer and read hits from `dmesg`.
 
@@ -101,3 +101,5 @@ Each of these cost real debugging time at least once.
 - **Home Assistant's own IPP integration will discover our CUPS queue** and offer a redundant card. Unavoidable, because we must advertise `_ipp._tcp` for AirPrint. Tell the user to Ignore it.
 - **Renaming a printer leaves ghost Bonjour records** cached in resolvers for up to an hour. Verify what is really published by asking cupsd (`ipptool ... | grep printer-dns-sd-name`), not by browsing mDNS.
 - **The queue id is slugified from the printer name**, so two printers with the same name collided until ids were suffixed (`_2`). That suffixing is what makes same-name-different-icon work.
+- **A host reboot can start the add-on before mDNS is flowing** (it comes up seconds after the Supervisor). The one-shot boot discovery then sees no printer, matches no driver, and creates no queue - which surfaces as a bogus "needs a driver" repair. That is why `monitor.sh` retries driver matching and queue creation every cycle via `queue.sh`; keep queue setup reachable from the monitor loop.
+- **The Supervisor renamed add-on containers from `addon_<slug>` to `app_<slug>`** (with the addons-to-apps rename). Anything shelling into the container must use the `app_` prefix.
