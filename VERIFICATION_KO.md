@@ -1,7 +1,7 @@
 # 수동 IPP 수정본 재검증
 
 대상 브랜치: fix/manual-ipp-driver
-초기 커밋: f72f54a
+GitHub 수정 커밋: 301f76a9a2b01ba43acbd570ef4a4baba18b5331
 
 ## 초기 수정본에서 발견하여 보완한 항목
 
@@ -24,15 +24,21 @@
 - git diff --check: 통과
 - 로컬 HTTP 서버 대상으로 실제 IPP 요청/응답 왕복: 통과
 - OpenPrinting 2.0.2 실제 소스의 M2020 모델 정의·필터·빌드 의존성 확인
+- GitHub Actions에서 amd64/aarch64 Docker 이미지 빌드: 모두 통과 (6ff214f 커밋)
+- GitHub Actions에서 통합 compileall, 15개 회귀 테스트, hassfest: 통과
+
+## 개인용 포크의 HACS 검사 범위
+
+첫 CI에서 HACS의 Issues 활성화와 Topics 설정 검사만 실패했습니다.
+bbc8282/ha-airprint에서는 공식 ignore 옵션으로 이 두 저장소 메타데이터 검사만 제외합니다.
+나머지 HACS 패키지 검사는 유지하며, upstream 저장소에서는 전체 검사를 실행합니다.
+이는 HACS 기본 목록 등록 요건을 모두 충족했다는 의미가 아닙니다.
 
 ## 아직 검증하지 않은 항목
 
-- Docker 이미지 빌드 및 컨테이너 시작: 현재 실행 환경에 Docker/Podman 없음
+- 실제 HA 환경에서 컨테이너 시작
 - HA Supervisor/통합 실기동·UI 저장·발견: 접근 가능한 HA 인스턴스 없음
 - A8004T의 실제 IPP 응답 및 프린터 큐 처리
 - SL-M2029의 실제 1페이지 출력 및 iPhone AirPrint 발견
-- amd64/aarch64 빌드: 포크에 업로드 후 GitHub CI로 확인 필요
 
-현재 판단: 로컬 회귀 검증을 통과한 개발 수정본. 설치/출력 성공을 보장하는 상태는 아님.
-
-포크의 GitHub Actions를 활성화한 후 CI를 다시 트리거하여 두 아키텍처 빌드를 확인합니다.
+현재 판단: 회귀 검증과 두 아키텍처 이미지 빌드를 통과한 개발 수정본. 실제 설치/출력은 확인이 필요합니다.

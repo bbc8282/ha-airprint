@@ -48,5 +48,6 @@ ipTIME 대상의 토너 및 페이지 수는 SNMP로 추정하지 않습니다.
 
 `python3 -m unittest discover -s tests`의 15개 테스트와 Bash/Python 문법 검사를 통과했습니다.
 기존 무스킴 주소는 HA 통합에서도 보정하며, 이에 따라 일부 엔티티 식별자가 변경될 수 있습니다.
-Docker 이미지 빌드, HA 통합 실기동, 실물 출력은 아직 검증하지 않았습니다.
+GitHub Actions에서 amd64/aarch64 Docker 이미지 빌드와 hassfest를 통과했습니다.
+HA 통합 실기동과 실물 출력은 아직 검증하지 않았습니다.
 롤백은 수정 앱 중지 → 기존 통합 파일 복구 → 기존 앱 재시작 순서입니다.

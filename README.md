@@ -78,6 +78,11 @@ It does not certify that a USB printer attached to a router is ready to print.
 Toner and lifetime page-count sensors remain unavailable for this IPP mode.
 Samsung SL-M2029 compatibility must still be confirmed with a test page.
 
+Both amd64 and aarch64 image builds, the 15 regression tests and hassfest have
+passed in GitHub Actions. The personal fork skips only HACS's Issues and Topics
+metadata checks; package validation remains enabled. See
+[the verification report](VERIFICATION_KO.md) for the checks and remaining hardware tests.
+
 ## Sensors
 
 Each printer becomes a device in Home Assistant:

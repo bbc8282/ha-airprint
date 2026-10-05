@@ -85,3 +85,6 @@ jobs:
       - uses: hacs/action@main
         with:
           category: integration
+          # Personal forks need package validation, not default-list metadata.
+          # Keep the upstream repository's full HACS validation unchanged.
+          ignore: ${{ github.repository == 'bbc8282/ha-airprint' && 'issues topics' || '' }}
