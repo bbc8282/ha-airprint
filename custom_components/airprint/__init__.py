@@ -9,7 +9,7 @@ from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers import issue_registry as ir
 from homeassistant.exceptions import ConfigEntryNotReady
 
-from .const import DOMAIN, SUBENTRY, device_name, label
+from .const import DOMAIN, SUBENTRY, device_name, label, normalize_device
 from .coordinator import AirPrintCoordinator
 
 _LOGGER = logging.getLogger(__name__)
@@ -20,7 +20,7 @@ def _printer(data: dict) -> dict:
     printer = {
         "name": data.get("name", ""),
         "location": data.get("location", ""),
-        "device": data.get("device", ""),
+        "device": normalize_device(data.get("device", "")),
     }
 
     if data.get("icon"):
@@ -52,7 +52,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     for subentry in entry.subentries.values():
         data = dict(subentry.data)
-        device = data.get("device", "")
+        device = normalize_device(data.get("device", ""))
 
         name = data.get("name", "")
         if "://" in name:
@@ -70,7 +70,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             name = model
 
         discovered = discovered or model or name or device_name(device)
-        repaired = {**data, "discovered_name": discovered, "name": name or discovered}
+        repaired = {**data, "device": device, "discovered_name": discovered, "name": name or discovered}
 
         if repaired != data:
             hass.config_entries.async_update_subentry(entry, subentry, data=repaired)

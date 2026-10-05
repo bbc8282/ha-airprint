@@ -48,6 +48,8 @@ if [ "${COUNT}" -eq 0 ]; then
 	echo "[airprint] no printers configured yet — add one in Home Assistant"
 fi
 
+echo "[airprint] available M2020 drivers:"
+lpinfo -m | grep -i M2020 || true
 FOUND=$(/discover.sh)
 
 for i in $(seq 0 $((COUNT - 1))); do
@@ -71,6 +73,8 @@ for i in $(seq 0 $((COUNT - 1))); do
 
 	if [ -z "${DEVICE}" ]; then
 		DEVICE=$(printf '%s' "${FOUND}" | jq -r '.[0].device // ""')
+	elif [[ "${DEVICE}" != *"://"* && "${DEVICE}" == *"/printers/"* ]]; then
+		DEVICE="ipp://${DEVICE}"
 	elif ! printf '%s' "${DEVICE}" | grep -q '://'; then
 		DEVICE="socket://${DEVICE}"
 	fi
@@ -81,6 +85,8 @@ for i in $(seq 0 $((COUNT - 1))); do
 	fi
 
 	DRIVER=$(printf '%s' "${FOUND}" | jq -r --arg d "${DEVICE}" '.[] | select(.device == $d) | .driver // ""' | head -1)
+	MANUAL=$(/manual-driver.sh "${DEVICE}")
+	[ -z "${MANUAL}" ] || DRIVER=${MANUAL}
 
 	if [ -z "${PRINTER_ICON}" ]; then
 		LABEL="${NAME}"

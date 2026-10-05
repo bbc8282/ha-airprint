@@ -26,7 +26,7 @@ from homeassistant.helpers.selector import (
 )
 from homeassistant.helpers.service_info.zeroconf import ZeroconfServiceInfo
 
-from .const import DEFAULT_ICON, DEFAULT_PORT, DOMAIN, ICONS, SUBENTRY, device_name, label
+from .const import DEFAULT_ICON, DEFAULT_PORT, DOMAIN, ICONS, SUBENTRY, device_name, label, normalize_device
 
 
 def printer_schema(
@@ -59,6 +59,7 @@ def printer_schema(
     )
 
     if editing:
+        fields[vol.Required("device", default=current.get("device", ""))] = TextSelector()
         fields[vol.Optional("driver")] = TextSelector(
             TextSelectorConfig(type=TextSelectorType.URL)
         )
@@ -91,6 +92,7 @@ def printer_data(
     current = current or {}
 
     device = user_input.get("device") or current.get("device")
+    device = normalize_device(device or "")
     found = next((d for d in discovered if d["device"] == device), None)
 
     if not device and discovered:

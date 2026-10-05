@@ -48,6 +48,41 @@ If no driver is available for your printer, you are asked for one here — see [
 
 That's it. The printer now appears in the print dialogue on any device that speaks AirPrint.
 
+## Manual IPP printers (development branch)
+
+For a router USB print server that is not discovered automatically, add its full
+printer URI, such as `ipp://192.168.0.21:631/printers/ipTIME_Printer`.
+The **Edit printer** form also lets you correct the printer URI.
+
+If the router does not report a usable model, add a **driver_overrides** entry
+in the app's YAML configuration, alongside the existing **printers** list:
+
+```yaml
+driver_overrides:
+  - device: ipp://192.168.0.21:631/printers/ipTIME_Printer
+    model: Samsung M2020 Series
+```
+
+The model must identify one installed driver. No match or multiple matching
+SpliX drivers leaves the printer unconfigured and logs a diagnostic. The
+integration preserves this separate override list when saving printers.
+
+This branch builds the free SpliX 2.0.2 driver from a pinned OpenPrinting commit
+and checks that its M2020 PPD can be generated during the image build. It uses a
+local image build; use the local app installation procedure in
+[the installation notes](MANUAL_IPP_KO.md). The official upstream image does not
+include these modifications. Restarting an existing image is insufficient.
+
+IPP **Online** means the remote print queue responds to a read-only IPP query.
+It does not certify that a USB printer attached to a router is ready to print.
+Toner and lifetime page-count sensors remain unavailable for this IPP mode.
+Samsung SL-M2029 compatibility must still be confirmed with a test page.
+
+Both amd64 and aarch64 image builds, the 15 regression tests and hassfest have
+passed in GitHub Actions. The personal fork skips only HACS's Issues and Topics
+metadata checks; package validation remains enabled. See
+[the verification report](VERIFICATION_KO.md) for the checks and remaining hardware tests.
+
 ## Sensors
 
 Each printer becomes a device in Home Assistant:

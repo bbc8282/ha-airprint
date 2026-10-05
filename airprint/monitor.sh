@@ -62,6 +62,9 @@ resolve() {
 		timeout 6 avahi-browse -rtp _pdl-datastream._tcp 2>/dev/null |
 			awk -F';' -v name="${service}" '$1 == "=" && $3 == "IPv4" && $4 == name { print $8 "\t" $9; exit }'
 		;;
+	ipp://*|ipps://*|http://*|https://*)
+		python3 /ipp-probe.py resolve "$1"
+		;;
 	socket://*)
 		local hostport=${1#socket://}
 		hostport=${hostport%%/*}
@@ -79,7 +82,12 @@ while true; do
 
 	: > "${QUEUES}.next"
 
-	while IFS=$'\t' read -r QUEUE DEVICE LABEL LOCATION DRIVER; do
+	while IFS= read -r ROW; do
+		# Extract one tab at a time: Bash IFS collapses empty tab fields.
+		QUEUE=${ROW%%$'\t'*}; ROW=${ROW#*$'\t'}
+		DEVICE=${ROW%%$'\t'*}; ROW=${ROW#*$'\t'}
+		LABEL=${ROW%%$'\t'*}; ROW=${ROW#*$'\t'}
+		LOCATION=${ROW%%$'\t'*}; DRIVER=${ROW#*$'\t'}
 		[ -n "${QUEUE}" ] || continue
 		CONFIGURED="${CONFIGURED} ${DEVICE}"
 		LOCATION=${LOCATION:-}
@@ -87,6 +95,8 @@ while true; do
 
 		if [ -z "${DRIVER}" ]; then
 			MATCH=$(printf '%s' "${FOUND}" | jq -r --arg d "${DEVICE}" '.[] | select(.device == $d) | .driver // ""' | head -1)
+			MANUAL=$(/manual-driver.sh "${DEVICE}")
+			[ -z "${MANUAL}" ] || MATCH=${MANUAL}
 			if [ -n "${MATCH}" ] && /queue.sh "${QUEUE}" "${DEVICE}" "${LABEL}" "${LOCATION}" "${MATCH}"; then
 				echo "[airprint] ${LABEL}: driver ${MATCH} -> queue created"
 				DRIVER=${MATCH}
@@ -95,12 +105,19 @@ while true; do
 
 		printf '%s\t%s\t%s\t%s\t%s\n' "${QUEUE}" "${DEVICE}" "${LABEL}" "${LOCATION}" "${DRIVER}" >> "${QUEUES}.next"
 
-		IFS=$'\t' read -r HOST _ < <(resolve "${DEVICE}")
+		IFS=$'\t' read -r HOST PORT < <(resolve "${DEVICE}")
 
 		if [ -z "${HOST:-}" ]; then
 			ONLINE=false
 			PROBLEM=false
 			HOST=""
+		elif [[ "${DEVICE}" == ipp://* || "${DEVICE}" == ipps://* || "${DEVICE}" == http://* || "${DEVICE}" == https://* ]]; then
+			# Query IPP without opening a raw printer port or submitting a job.
+			if python3 /ipp-probe.py check "$DEVICE" 2>/dev/null; then
+				ONLINE=true; PROBLEM=false
+			else
+				ONLINE=false; PROBLEM=true
+			fi
 		elif alive "${HOST}"; then
 			ONLINE=true
 			PROBLEM=false
@@ -117,7 +134,7 @@ while true; do
 		PAGES=null
 		REASONS="[]"
 
-		if [ -n "${HOST}" ]; then
+		if [ -n "${HOST}" ] && [[ "${DEVICE}" != ipp://* && "${DEVICE}" != ipps://* && "${DEVICE}" != http://* && "${DEVICE}" != https://* ]]; then
 			SUPPLY=$(snmp "${HOST}" 1.3.6.1.2.1.43.11.1.1.6.1.1)
 			LEVEL=$(snmp "${HOST}" 1.3.6.1.2.1.43.11.1.1.9.1.1)
 			CAPACITY=$(snmp "${HOST}" 1.3.6.1.2.1.43.11.1.1.8.1.1)

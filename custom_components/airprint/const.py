@@ -27,3 +27,12 @@ def label(printer: dict) -> str:
     icon = printer.get("icon", "")
     name = printer.get("name", "")
     return f"{icon} {name}".strip()
+
+
+def normalize_device(device: str) -> str:
+    device = device.strip()
+    if not device or "://" in device:
+        return device
+    if "/printers/" in device:
+        return f"ipp://{device}"
+    return f"socket://{device}"
