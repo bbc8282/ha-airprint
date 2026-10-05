@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, "fix/**"]
   pull_request:
 
 jobs:
@@ -76,6 +76,9 @@ jobs:
 
       - name: It must compile
         run: python -m compileall -q custom_components/airprint
+
+      - name: Manual IPP regression tests
+        run: python -m unittest discover -s tests -v
 
       - uses: home-assistant/actions/hassfest@master
 

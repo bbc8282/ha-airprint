@@ -1,9 +1,8 @@
-name: AirPrint
+name: AirPrint IPP Manual
 version: "1.12.0"
 slug: airprint
 description: AirPrint bridge for network printers that do not support it
 url: https://github.com/aaronfagan/ha-airprint
-image: ghcr.io/aaronfagan/ha-airprint/airprint
 arch:
   - amd64
   - aarch64
@@ -20,8 +19,12 @@ map:
   - addon_config:rw
   - share:rw
 options:
+  driver_overrides: []
   printers: []
 schema:
+  driver_overrides:
+    - device: str
+      model: str
   printers:
     - icon: list(🖨️|📠|📄|📁|☁️|🏢|🏠)?
       name: str
