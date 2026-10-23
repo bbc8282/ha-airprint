@@ -204,5 +204,7 @@ administrator with username `print` and initial password `print`, including
 existing installations without the new option. Change `cups_admin_password`
 in the app configuration and restart to change its password. The account has
 CUPS administrative group membership and no login shell; it is separate from
-your Home Assistant and NAS accounts. Refresh the app store repository and
-rebuild the app to install this change; HACS does not need an update.
+your Home Assistant and NAS accounts. Refresh the app store repository and update the installed app to version
+1.13.0 to install the administrator option. Restarting or rebuilding an old
+installed version may leave its configuration form unchanged. HACS does not
+need an update for CUPS web authentication.
