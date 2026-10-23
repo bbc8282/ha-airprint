@@ -83,6 +83,21 @@ passed in GitHub Actions. The personal fork skips only HACS's Issues and Topics
 metadata checks; package validation remains enabled. See
 [the verification report](VERIFICATION_KO.md) for the checks and remaining hardware tests.
 
+## Troubleshooting interrupted print jobs
+
+CUPS job actions and errors appear in the app's **Log** tab. The app's **log_level**
+setting defaults to **info**. For a job that stops or changes page order, set
+**log_level: debug**, save and restart the app before a small test print. The
+debug log includes the filter's job options and backend messages; the action
+log records cancellation requests and their source address. Return to **info**
+after collecting the log. Existing printer and driver override settings stay
+in place. Install this change by refreshing the app store and **rebuilding**
+the app; restarting its existing image does not install new code.
+
+An IPP health probe failure is not a confirmed paper jam. A **canceled** job does
+not identify who canceled it, and **completed** in CUPS is not a physical
+page-count check. Read the job's log before changing drivers or retry policies.
+
 ## Sensors
 
 Each printer becomes a device in Home Assistant:

@@ -19,9 +19,11 @@ map:
   - addon_config:rw
   - share:rw
 options:
+  log_level: info
   driver_overrides: []
   printers: []
 schema:
+  log_level: list(warn|info|debug)
   driver_overrides:
     - device: str
       model: str
