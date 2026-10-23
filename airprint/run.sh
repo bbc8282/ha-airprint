@@ -11,6 +11,9 @@ pkill -x cupsd 2>/dev/null && sleep 2
 rm -f /run/cups/cupsd.pid
 
 install -m 0644 /usr/share/airprint/cupsd.conf /etc/cups/cupsd.conf
+LOG_LEVEL=$(jq -r '.log_level // "info"' "${OPTIONS}")
+python3 /cups-logging.py --log-level "${LOG_LEVEL}"
+echo "[airprint] CUPS log level: ${LOG_LEVEL}; job actions and errors go to the app log"
 
 if grep -q '^SystemGroup' /etc/cups/cups-files.conf 2>/dev/null; then
 	sed -i 's/^SystemGroup.*/SystemGroup root lpadmin/' /etc/cups/cups-files.conf

@@ -75,4 +75,5 @@ CMD ["/run.sh"]
 
 COPY manual-driver.sh /manual-driver.sh
 COPY ipp-probe.py /ipp-probe.py
+COPY cups-logging.py /cups-logging.py
 RUN chmod +x /manual-driver.sh

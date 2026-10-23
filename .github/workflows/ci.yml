@@ -61,8 +61,16 @@ jobs:
           context: airprint
           platforms: ${{ matrix.platform }}
           push: false
+          load: true
+          tags: ha-airprint-ci:${{ matrix.arch }}
           cache-from: type=gha,scope=${{ matrix.arch }}
           cache-to: type=gha,scope=${{ matrix.arch }},mode=max
+
+      - name: CUPS must expose job cancellation in the app log
+        run: |
+          docker run --rm --entrypoint python3 \
+            -v "${GITHUB_WORKSPACE}/tests:/tests:ro" \
+            ha-airprint-ci:${{ matrix.arch }} /tests/cups_logging_smoke.py
 
   integration:
     name: Integration
