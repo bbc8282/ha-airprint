@@ -196,3 +196,13 @@ Desktop clients *do* fetch the icon image, and the add-on serves one automatical
 ## Licence
 
 [MIT](LICENSE). Vendor drivers are downloaded from the vendor and covered by their own licences; none are redistributed here.
+
+### CUPS web administrator
+
+Open `http://<Home Assistant IP>:631`. This fork configures a dedicated CUPS
+administrator with username `print` and initial password `print`, including
+existing installations without the new option. Change `cups_admin_password`
+in the app configuration and restart to change its password. The account has
+CUPS administrative group membership and no login shell; it is separate from
+your Home Assistant and NAS accounts. Refresh the app store repository and
+rebuild the app to install this change; HACS does not need an update.

@@ -1,4 +1,6 @@
 """Container-only check: hold and cancel a local job; never contact a printer."""
+import base64
+import json
 import importlib.util
 from pathlib import Path
 import re
@@ -27,6 +29,21 @@ with tempfile.TemporaryDirectory() as tmp:
                 time.sleep(0.1)
             else:
                 raise RuntimeError("CUPS did not start")
+
+            options = path / "options.json"
+            for password in ("print", "changed:test-password"):
+                options.write_text(json.dumps({"cups_admin_password": password}))
+                subprocess.run(["python3", "/cups-admin.py", str(options)], check=True)
+                for candidate, expected in ((password, "200"), ("wrong-password", "401")):
+                    token = base64.b64encode(("print:" + candidate).encode()).decode()
+                    response = subprocess.run(
+                        ["curl", "--silent", "--show-error", "--insecure", "--max-time", "10",
+                         "--output", "/dev/null", "--write-out", "%{http_code}",
+                         "--header", "Authorization: Basic " + token,
+                         "https://localhost:631/admin/conf/cupsd.conf"],
+                        capture_output=True, text=True, check=True)
+                    assert response.stdout == expected, response.stdout
+            print("PASS: CUPS admin login, password rotation, and incorrect-password rejection")
 
             # The job is held before filtering; the loopback URI is never used.
             subprocess.run(["lpadmin", "-p", "DiagnosticTest", "-v",

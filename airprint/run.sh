@@ -6,6 +6,7 @@ QUEUES=/tmp/airprint-queues
 STATUS_DIR=/srv
 
 /drivers.sh
+python3 /cups-admin.py "${OPTIONS}"
 
 pkill -x cupsd 2>/dev/null && sleep 2
 rm -f /run/cups/cupsd.pid
